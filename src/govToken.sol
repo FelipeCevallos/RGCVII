@@ -6,3 +6,40 @@ import "lib/openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import "lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
+
+// RaidGuild Cohort VII Governance Token (RGG)  
+contract RGCVII is ERC721, ERC20Votes, Ownable, ReentrancyGuard {
+    // Mapping from NFT ID to governance token amount
+    mapping(uint256 => uint256) public tokenVotingPower;
+    
+    // Counter for NFT IDs
+    uint256 private _tokenIdCounter;
+
+    constructor(address initialOwner) 
+        Ownable(initialOwner)
+        ERC721("Governance NFT", "gNFT") 
+        ERC20("Governance Token", "GOV")
+        ERC20Permit("Governance Token") // Required by ERC20Votes
+    {}
+
+    // Mint new NFT with associated governance tokens
+    function mintNFT(address to, uint256 votingPower) external onlyOwner nonReentrant {
+        uint256 tokenId = _tokenIdCounter;
+        _tokenIdCounter++;
+        
+        // Mint the NFT
+        _safeMint(to, tokenId);
+        
+        // Mint governance tokens and associate them with the NFT
+        _mint(address(this), votingPower);
+        tokenVotingPower[tokenId] = votingPower;
+    }
+
+    // Allow NFT owner to delegate voting power
+    function delegateVotingPower(uint256 tokenId, address delegatee) external {
+        require(ownerOf(tokenId) == msg.sender, "Not the NFT owner");
+        uint256 votingPower = tokenVotingPower[tokenId];
+        _delegate(delegatee);
+    }
+
+}
